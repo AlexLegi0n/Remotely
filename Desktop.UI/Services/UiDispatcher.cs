@@ -200,7 +200,8 @@ internal class UiDispatcher : IUiDispatcher
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error while starting foreground app.");
+            _logger.LogError(ex, "Error while starting foreground app");
+            
             throw;
         }
     }

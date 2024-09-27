@@ -13,6 +13,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Google.Protobuf" Version="3.27.2"/>
+    <PackageReference Include="Grpc.Net.Client" Version="2.63.0"/>
+    <PackageReference Include="Grpc.Net.ClientFactory" Version="2.63.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.64.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Bitbound.SimpleMessenger" Version="2.2.1" />
     <PackageReference Include="CommunityToolkit.Diagnostics" Version="8.2.2" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
@@ -34,6 +41,12 @@
 
   <ItemGroup>
     <Resource Include="Assets\favicon.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="..\Sirona.RemoteControl.Synchronizer\Protos\remoteControl.proto" GrpcServices="Client">
+      <Link>Grpc\remoteControl.proto</Link>
+    </Protobuf>
   </ItemGroup>
 
 </Project>

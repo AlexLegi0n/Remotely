@@ -12,6 +12,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Remotely.Desktop.UI.Controls.Dialogs;
 using Remotely.Desktop.Shared.Native.Linux;
 using Desktop.Shared.Services;
+using Google.Protobuf.WellKnownTypes;
+using Grpc.Core;
+using Sirona.RemoteControl.Synchronizer;
 
 namespace Remotely.Desktop.UI.ViewModels;
 
@@ -39,6 +42,8 @@ public class MainViewViewModel : BrandedViewModelBase, IMainViewViewModel
 {
     private readonly IAppState _appState;
     private readonly IDesktopEnvironment _environment;
+    private readonly RemoteControlService.RemoteControlServiceClient _grpcClient;
+
     private readonly IDialogProvider _dialogProvider;
     private readonly IDesktopHubConnection _hubConnection;
     private readonly IServiceProvider _serviceProvider;
@@ -54,7 +59,7 @@ public class MainViewViewModel : BrandedViewModelBase, IMainViewViewModel
       IViewModelFactory viewModelFactory,
       IDesktopEnvironment environmentHelper,
       IDialogProvider dialogProvider,
-      ILogger<MainViewViewModel> logger)
+      ILogger<MainViewViewModel> logger, RemoteControlService.RemoteControlServiceClient grpcClient)
       : base(brandingProvider, dispatcher, logger)
     {
         _appState = appState;
@@ -63,6 +68,7 @@ public class MainViewViewModel : BrandedViewModelBase, IMainViewViewModel
         _viewModelFactory = viewModelFactory;
         _environment = environmentHelper;
         _dialogProvider = dialogProvider;
+        _grpcClient = grpcClient;
 
         _appState.ViewerRemoved += ViewerRemoved;
         _appState.ViewerAdded += ViewerAdded;
@@ -159,6 +165,11 @@ public class MainViewViewModel : BrandedViewModelBase, IMainViewViewModel
             formattedSessionID += $"{sessionId.Substring(i, 3)} ";
         }
 
+        _grpcClient.BroadcastSessionCode(new SessionAuthentication
+        {
+            Code = formattedSessionID.Trim()
+        });
+        
         await _dispatcher.InvokeAsync(() =>
         {
             StatusMessage = formattedSessionID.Trim();
@@ -177,7 +188,8 @@ public class MainViewViewModel : BrandedViewModelBase, IMainViewViewModel
 
         StatusMessage = "Initializing...";
 
-        await InstallDependencies();
+        // dependencies should be installed manually
+        // await InstallDependencies();
 
         StatusMessage = "Retrieving...";
 
@@ -227,11 +239,18 @@ public class MainViewViewModel : BrandedViewModelBase, IMainViewViewModel
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during initialization.");
+            _logger.LogError(ex, "Error during initialization");
         }
 
         // If we got here, something went wrong.
         StatusMessage = "Failed";
+        
+        await _grpcClient.BroadcastSessionErrorAsync(new SessionControlError
+        {
+            Message = "Connection Failed",
+            Error = "Failed to connect to server."
+        });
+        
         await _dialogProvider.Show("Failed to connect to server.", "Connection Failed", MessageBoxType.OK);
     }
 
@@ -255,7 +274,7 @@ public class MainViewViewModel : BrandedViewModelBase, IMainViewViewModel
         if (!Uri.TryCreate(result, UriKind.Absolute, out var serverUri) ||
             serverUri.Scheme != Uri.UriSchemeHttp && serverUri.Scheme != Uri.UriSchemeHttps)
         {
-            _logger.LogWarning("Server URL is not valid.");
+            _logger.LogWarning("Server URL is not valid");
             await _dialogProvider.Show("Server URL must be a valid Uri (e.g. https://example.com).", "Invalid Server URL", MessageBoxType.OK);
             return;
         }
@@ -303,7 +322,7 @@ public class MainViewViewModel : BrandedViewModelBase, IMainViewViewModel
             }
             catch
             {
-                _logger.LogError("Failed to install dependencies.");
+                _logger.LogError("Failed to install dependencies");
             }
         }
 
@@ -312,10 +331,13 @@ public class MainViewViewModel : BrandedViewModelBase, IMainViewViewModel
 
     private async void ScreenCastRequested(object? sender, ScreenCastRequest screenCastRequest)
     {
-        var result = await _dialogProvider.Show(
-            $"You've received a connection request from {screenCastRequest.RequesterName}.  Accept?",
-            "Connection Request",
-            MessageBoxType.YesNo);
+        await _grpcClient.BroadcastSessionControlRequestedAsync(new SessionControlRequested
+        {
+            UserName = screenCastRequest.RequesterName
+        });
+        MessageBoxResult result = MessageBoxResult.No;
+
+        result = await GetPermissions(result);
 
         if (result == MessageBoxResult.Yes)
         {
@@ -326,6 +348,18 @@ public class MainViewViewModel : BrandedViewModelBase, IMainViewViewModel
         {
             await _hubConnection.SendConnectionRequestDenied(screenCastRequest.ViewerId);
         }
+    }
+    
+    private async Task<MessageBoxResult> GetPermissions(MessageBoxResult result)
+    {
+        using AsyncServerStreamingCall<SessionPermissions>? call = _grpcClient.SubscribeToPermissionProvided(new Empty());
+
+        await foreach (SessionPermissions? response in call.ResponseStream.ReadAllAsync())
+        {
+            return response.AllowConnection ? MessageBoxResult.Yes : MessageBoxResult.No;
+        }
+
+        return result;
     }
 
     private async void ViewerAdded(object? sender, IViewer viewer)

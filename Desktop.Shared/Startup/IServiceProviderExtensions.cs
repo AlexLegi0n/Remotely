@@ -27,7 +27,8 @@ public static class IServiceProviderExtensions
         string organizationName,
         bool relaunch,
         string viewers,
-        bool elevate)
+        bool elevate,
+        string grpcServer)
     {
         try
         {
@@ -54,7 +55,8 @@ public static class IServiceProviderExtensions
                 pipeName ?? string.Empty,
                 relaunch,
                 viewers ?? string.Empty,
-                elevate);
+                elevate,
+                grpcServer ?? string.Empty);
 
             StaticServiceProvider.Instance = services;
 
@@ -98,7 +100,8 @@ public static class IServiceProviderExtensions
                 string organizationName,
                 bool relaunch,
                 string viewers,
-                bool elevate) =>
+                bool elevate,
+                string grpc) =>
             {
                 if (string.IsNullOrWhiteSpace(host) && !string.IsNullOrWhiteSpace(serverUri))
                 {
@@ -115,7 +118,8 @@ public static class IServiceProviderExtensions
                     organizationName,
                     relaunch,
                     viewers,
-                    elevate);
+                    elevate,
+                    grpc);
             });
 
             rootCommand.TreatUnmatchedTokensAsErrors = treatUnmatchedArgsAsErrors;
@@ -141,7 +145,7 @@ public static class IServiceProviderExtensions
         ILogger<IServiceProvider> logger)
     {
         e.SetObserved();
-        logger.LogError(e.Exception, "An unobserved task exception occurred.");
+        logger.LogError(e.Exception, "An unobserved task exception occurred");
     }
 
     [SupportedOSPlatform("windows")]
