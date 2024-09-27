@@ -1,19 +1,18 @@
-﻿using Remotely.Desktop.Shared.Abstractions;
+﻿using System.Diagnostics;
 using System.Threading;
+using Avalonia;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Remotely.Shared.Services;
-using Remotely.Desktop.Shared.Services;
-using System.Diagnostics;
-using Remotely.Shared.Utilities;
-using Remotely.Desktop.Shared.Startup;
 using Remotely.Desktop.Linux.Startup;
-using Remotely.Desktop.UI.Services;
-using Avalonia;
+using Remotely.Desktop.Shared.Abstractions;
+using Remotely.Desktop.Shared.Services;
+using Remotely.Desktop.Shared.Startup;
 using Remotely.Desktop.UI;
-using Desktop.Shared.Services;
+using Remotely.Desktop.UI.Services;
+using Remotely.Shared.Services;
+using Remotely.Shared.Utilities;
 
-namespace Remotely.Desktop.XPlat;
+namespace Remotely.Desktop.Linux;
 
 public class Program
 {
@@ -29,7 +28,7 @@ public class Program
         var version = AppVersionHelper.GetAppVersion();
         var logger = new FileLogger("Remotely_Desktop", version, "Program.cs");
         var filePath = Environment.ProcessPath ?? Environment.GetCommandLineArgs().First();
-        var serverUrl = Debugger.IsAttached ? "http://localhost:5000" : string.Empty;
+        var serverUrl = Debugger.IsAttached ? "http://192.168.1.156:5000" : string.Empty;
         var getEmbeddedResult = EmbeddedServerDataProvider.Instance.TryGetEmbeddedData(filePath);
         if (getEmbeddedResult.IsSuccess)
         {
@@ -37,7 +36,7 @@ public class Program
         }
         else
         {
-            logger.LogWarning(getEmbeddedResult.Exception, "Failed to extract embedded server data.");
+            logger.LogWarning(getEmbeddedResult.Exception, "Failed to extract embedded server data");
         }
 
         var services = new ServiceCollection();
@@ -77,7 +76,7 @@ public class Program
 
         if (!result.IsSuccess)
         {
-            logger.LogError(result.Exception, "Failed to start remote control client.");
+            logger.LogError(result.Exception, "Failed to start remote control client");
             Environment.Exit(1);
         }
 
@@ -85,7 +84,7 @@ public class Program
         Console.WriteLine("Press Ctrl + C to exit.");
 
         var shutdownService = provider.GetRequiredService<IShutdownService>();
-        Console.CancelKeyPress += async (s, e) =>
+        Console.CancelKeyPress += async (_, _) =>
         {
             await shutdownService.Shutdown();
         };

@@ -36,8 +36,4 @@
     <Resource Include="Assets\favicon.ico" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Native\" />
-  </ItemGroup>
-
 </Project>

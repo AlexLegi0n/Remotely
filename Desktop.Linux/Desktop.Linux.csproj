@@ -58,4 +58,14 @@
     <ProjectReference Include="..\Desktop.Shared\Desktop.Shared.csproj" />
     <ProjectReference Include="..\Desktop.UI\Desktop.UI.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.11.0" />
+    <PackageReference Include="WaylandSharp" Version="0.2.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="WaylandProtocol" />
+    <AdditionalFiles Include="Assets/wayland.xml" WaylandProtocol="client" />
+    <!-- Add additional protocol files with more AdditionalFiles tags -->
+  </ItemGroup>
 </Project>

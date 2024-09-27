@@ -27,7 +27,7 @@ public static class IServiceCollectionExtensions
         services.AddSingleton<IKeyboardMouseInput, KeyboardMouseInputLinux>();
         services.AddSingleton<IClipboardService, ClipboardService>();
         services.AddSingleton<IAudioCapturer, AudioCapturerLinux>();
-        services.AddTransient<IScreenCapturer, ScreenCapturerLinux>();
+        services.AddTransient<IScreenCapturer, WaylandScreenCapturerLinux>();
         services.AddScoped<IFileTransferService, FileTransferServiceLinux>();
         services.AddSingleton<ISessionIndicator, SessionIndicator>();
         services.AddSingleton<IShutdownService, ShutdownServiceLinux>();

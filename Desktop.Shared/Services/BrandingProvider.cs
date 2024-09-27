@@ -53,8 +53,8 @@ public class BrandingProvider : IBrandingProvider
         }
         else
         {
-            _logger.LogWarning(result.Exception, "Failed to extract embedded service data.");
-            _brandingInfo = new()
+            _logger.LogWarning(result.Exception, "Failed to extract embedded service data");
+            _brandingInfo = new BrandingInfo
             {
                 Product = "Remote Control"
             };
@@ -62,9 +62,9 @@ public class BrandingProvider : IBrandingProvider
 
         if (_brandingInfo.Icon is not { Length: > 0 })
         {
-            using var mrs = typeof(BrandingProvider).Assembly.GetManifestResourceStream("Remotely.Desktop.Shared.Assets.Remotely_Icon.png");
+            await using var mrs = typeof(BrandingProvider).Assembly.GetManifestResourceStream("Remotely.Desktop.Shared.Assets.Remotely_Icon.png");
             using var ms = new MemoryStream();
-            mrs!.CopyTo(ms);
+            await mrs!.CopyToAsync(ms);
 
             _brandingInfo.Icon = ms.ToArray();
         }

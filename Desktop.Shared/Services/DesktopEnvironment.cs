@@ -1,5 +1,6 @@
 ﻿using Remotely.Desktop.Shared.Native.Linux;
 using System.Security.Principal;
+using Desktop.Native.Linux;
 
 namespace Desktop.Shared.Services;
 
