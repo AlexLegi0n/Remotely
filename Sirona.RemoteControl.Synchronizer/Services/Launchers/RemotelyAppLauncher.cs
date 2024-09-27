@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Text.RegularExpressions;
-
 using Sirona.RemoteControl.Synchronizer.Extensions;
 using Sirona.RemoteControl.Synchronizer.Services.Broadcasters;
 
@@ -25,12 +24,12 @@ internal sealed class RemotelyAppLauncher(
 
             return Task.CompletedTask;
         }
-        
+
         string remotelyServer = configuration.GetRequiredValue("RemotelyServer");
         int grpcServerPort = configuration.GetRequiredValue<int>("grpcPort");
         string path = configuration.GetRequiredValue<string>("RemotelyDesktopAppPath");
-        
-        StartLinuxDesktopApp($"{path} --mode Attended --host {remotelyServer} --grpc http://localhost:{grpcServerPort}");
+
+        StartLinuxDesktopApp(path, $"--mode Attended --host {remotelyServer} --grpc http://localhost:{grpcServerPort}");
 
         broadcaster.Broadcast(new SynchronizerState
         {
@@ -72,7 +71,7 @@ internal sealed class RemotelyAppLauncher(
     }
 
 
-    private int StartLinuxDesktopApp(string args)
+    private int StartLinuxDesktopApp(string fileName, string args)
     {
         string xdisplay = ":0";
         string xauthority = string.Empty;
@@ -130,12 +129,13 @@ internal sealed class RemotelyAppLauncher(
 
         ProcessStartInfo psi = new()
         {
-            FileName = "sudo",
+            FileName = fileName,
             Arguments = args
         };
 
         psi.Environment.Add("DISPLAY", xdisplay);
         psi.Environment.Add("XAUTHORITY", xauthority);
+
         logger.LogInformation(
             "Attempting to launch screen caster with username {Username}, xauthority {Authority}, display {Display}, and args {Args}",
             username,

@@ -178,13 +178,13 @@ public class MainViewViewModel : BrandedViewModelBase, IMainViewViewModel
 
     public async Task Init()
     {
-        if (!_environment.IsDebug && 
-            OperatingSystem.IsLinux() && 
-            !_environment.IsElevated)
-        {
-            await _dialogProvider.Show("Please run with sudo.", "Sudo Required", MessageBoxType.OK);
-            Environment.Exit(0);
-        }
+        // if (!_environment.IsDebug && 
+        //     OperatingSystem.IsLinux() && 
+        //     !_environment.IsElevated)
+        // {
+        //     await _dialogProvider.Show("Please run with sudo.", "Sudo Required", MessageBoxType.OK);
+        //     Environment.Exit(0);
+        // }
 
         StatusMessage = "Initializing...";
 
