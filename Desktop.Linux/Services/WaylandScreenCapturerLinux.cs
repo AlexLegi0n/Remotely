@@ -37,37 +37,40 @@ internal sealed class WaylandScreen(WlOutput output) : IDisposable
 internal sealed class WaylandScreenCapturerLinux : IScreenCapturer
 {
     private readonly ILogger<WaylandScreenCapturerLinux> _logger;
-
     private readonly object _screenBoundsLock = new();
+
     private readonly List<WaylandScreen> _screens = [];
+
     private readonly WlDisplay _wlDisplay;
 
     private SKBitmap? _currentFrame;
 
     private WaylandScreen? _currentScreen;
-
     private ZxdgOutputManagerV1? _outputManager;
     private SKBitmap? _previousFrame;
 
     private bool _screenshotDone;
-
     private WestonScreenshooter? _westonScreenshooter;
     private WlShm? _wlShm;
+    private ZwlrScreencopyManagerV1? _zwlrScreencopyManager;
 
     public WaylandScreenCapturerLinux(ILogger<WaylandScreenCapturerLinux> logger)
     {
         _logger = logger;
-        string waylandServer = Environment.GetEnvironmentVariable("XDG_RUNTIME_DIR") ?? "/run/user/0";
+        string waylandServer = Environment.GetEnvironmentVariable("XDG_RUNTIME_DIR") ?? "/run/user/1000";
         string displayName = Environment.GetEnvironmentVariable("WAYLAND_DISPLAY") ?? "wayland-1";
-        _wlDisplay = WlDisplay.Connect($"{waylandServer}/{displayName}");
+        string wlshPath = $"{waylandServer}/{displayName}";
 
-        Init();
+        _logger.LogDebug("Wayland connection path: {Path}", wlshPath);
+
+        _wlDisplay = WlDisplay.Connect(wlshPath);
     }
 
     public void Dispose()
     {
         _wlDisplay.Dispose();
         _westonScreenshooter?.Dispose();
+        _zwlrScreencopyManager?.Dispose();
 
         foreach (WaylandScreen output in _screens)
         {
@@ -151,7 +154,12 @@ internal sealed class WaylandScreenCapturerLinux : IScreenCapturer
             highestY = Math.Max(highestY, output.OffsetY + output.Height);
         }
 
-        return new Rectangle(lowestX, lowestY, highestX - lowestX, highestY - lowestY);
+
+        Rectangle virtualScreenBounds = new(lowestX, lowestY, highestX - lowestX, highestY - lowestY);
+
+        _logger.LogDebug("Received virtual screen bounds: {@Rectangles}", virtualScreenBounds);
+
+        return virtualScreenBounds;
     }
 
     public void Init()
@@ -169,8 +177,24 @@ internal sealed class WaylandScreenCapturerLinux : IScreenCapturer
 
             if (_westonScreenshooter == null)
             {
-                throw new ArgumentNullException(nameof(_westonScreenshooter),
-                    "weston-screenshooter interface has not been not found");
+                _logger.LogWarning("{Protocol} interface has not been found. It will be disabled",
+                    WlInterface.WestonScreenshooter.Name);
+
+                if (_zwlrScreencopyManager == null)
+                {
+                    _logger.LogWarning("{Protocol} interface has not been found. It will be disabled",
+                        WlInterface.ZwlrScreencopyManagerV1.Name);
+
+                    throw new ArgumentException("No suitable protocol found for screen casting");
+                }
+
+                _logger.LogDebug("{Protocol} interface has been found. It will be enabled for screen casting",
+                    WlInterface.ZwlrScreencopyManagerV1.Name);
+            }
+            else
+            {
+                _logger.LogDebug("{Protocol} interface has been found. It will be enabled for screen casting",
+                    WlInterface.WestonScreenshooter.Name);
             }
 
             if (_wlShm == null)
@@ -180,11 +204,13 @@ internal sealed class WaylandScreenCapturerLinux : IScreenCapturer
 
             if (_outputManager == null)
             {
-                throw new ArgumentNullException(nameof(_outputManager),
-                    "zxdg_output_manager_v1 interface has not been found");
+                throw new ArgumentNullException(nameof(_outputManager), "zxdg_output_manager_v1 interface has not been found");
             }
 
-            _westonScreenshooter.Done += WestonScreenshooterOnDone;
+            if (_westonScreenshooter != null)
+            {
+                _westonScreenshooter.Done += WestonScreenshooterOnDone;
+            }
 
             foreach (WaylandScreen screen in _screens)
             {
@@ -193,12 +219,13 @@ internal sealed class WaylandScreenCapturerLinux : IScreenCapturer
 
             _wlDisplay.Roundtrip();
 
-            if (string.IsNullOrWhiteSpace(SelectedScreen) ||
-                _screens.All(x => x.Name != SelectedScreen))
+            if (!string.IsNullOrWhiteSpace(SelectedScreen) && _screens.Any(x => x.Name == SelectedScreen))
             {
-                _currentScreen = _screens.First();
-                RefreshCurrentScreenBounds();
+                return;
             }
+
+            _currentScreen = _screens.First();
+            RefreshCurrentScreenBounds();
         }
         catch (Exception ex)
         {
@@ -337,11 +364,15 @@ internal sealed class WaylandScreenCapturerLinux : IScreenCapturer
     {
         WlRegistry registry = (WlRegistry)sender!;
 
+        _logger.LogDebug("Found: [{Interface}] [{Version}]", e.Interface, e.Version);
+
         if (e.Interface == WlInterface.WestonScreenshooter.Name)
         {
             _logger.LogInformation("Binding {Interface} {Version}", e.Interface, e.Version);
 
             _westonScreenshooter = registry.Bind<WestonScreenshooter>(e.Name, e.Interface, e.Version);
+
+            return;
         }
 
         if (e.Interface == WlInterface.ZxdgOutputManagerV1.Name)
@@ -349,6 +380,8 @@ internal sealed class WaylandScreenCapturerLinux : IScreenCapturer
             _logger.LogInformation("Binding {Interface} {Version}", e.Interface, e.Version);
 
             _outputManager = registry.Bind<ZxdgOutputManagerV1>(e.Name, e.Interface, e.Version);
+
+            return;
         }
 
         if (e.Interface == WlInterface.WlShm.Name)
@@ -356,6 +389,8 @@ internal sealed class WaylandScreenCapturerLinux : IScreenCapturer
             _logger.LogInformation("Binding {Interface} {Version}", e.Interface, e.Version);
 
             _wlShm = registry.Bind<WlShm>(e.Name, e.Interface, e.Version);
+
+            return;
         }
 
         if (e.Interface == WlInterface.WlOutput.Name)
@@ -366,6 +401,15 @@ internal sealed class WaylandScreenCapturerLinux : IScreenCapturer
 
             WaylandScreen output = new(wlOutput);
             _screens.Add(output);
+
+            return;
+        }
+
+        if (e.Interface == WlInterface.ZwlrScreencopyManagerV1.Name)
+        {
+            _logger.LogInformation("Binding {Interface} {Version}", e.Interface, e.Version);
+
+            _zwlrScreencopyManager = registry.Bind<ZwlrScreencopyManagerV1>(e.Name, e.Interface, e.Version);
         }
     }
 
@@ -378,7 +422,7 @@ internal sealed class WaylandScreenCapturerLinux : IScreenCapturer
     {
         WaylandScreen screen = _screens.First(x => x.Name == SelectedScreen);
 
-        _logger.LogInformation("Setting new screen bounds: {Width}, {Height}, {OffsetX}, {OffsetY}",
+        _logger.LogDebug("Setting new screen bounds: {Width}, {Height}, {OffsetX}, {OffsetY}",
             screen.Width,
             screen.Height,
             screen.OffsetY,
@@ -386,6 +430,7 @@ internal sealed class WaylandScreenCapturerLinux : IScreenCapturer
 
         CurrentScreenBounds = new Rectangle(screen.OffsetX, screen.OffsetY, screen.Width, screen.Height);
         CaptureFullscreen = true;
+        
         ScreenChanged?.Invoke(this, CurrentScreenBounds);
     }
 
@@ -405,7 +450,22 @@ internal sealed class WaylandScreenCapturerLinux : IScreenCapturer
                 return _currentFrame!;
             }
 
-            _westonScreenshooter!.TakeShot(_currentScreen.Output, _currentScreen.Buffer!);
+            if (_westonScreenshooter != null)
+            {
+                _westonScreenshooter!.TakeShot(_currentScreen.Output, _currentScreen.Buffer!);
+            }
+            else
+            {
+                ZwlrScreencopyFrameV1 frame = _zwlrScreencopyManager!.CaptureOutputRegion(0, _currentScreen.Output,
+                    _currentScreen.OffsetX, _currentScreen.OffsetY, _currentScreen.Width, _currentScreen.Height);
+
+                _logger.LogDebug("Frame captured: {Id}", frame.GetId());
+                
+                frame.BufferDone += FrameOnBufferDone;
+                frame.Ready += FrameOnReady;
+                frame.Copy(_currentScreen.Buffer);
+            }
+
             bool done = _screenshotDone = false;
 
             while (!done && _wlDisplay.Dispatch() != -1)
@@ -438,5 +498,17 @@ internal sealed class WaylandScreenCapturerLinux : IScreenCapturer
         }
 
         return bitmap;
+    }
+
+    private void FrameOnReady(object? sender, ZwlrScreencopyFrameV1.ReadyEventArgs e)
+    {
+        _logger.LogDebug("On Frame ready with {@Args}", e);
+    }
+
+    private void FrameOnBufferDone(object? sender, ZwlrScreencopyFrameV1.BufferDoneEventArgs e)
+    {
+        _logger.LogDebug("On Buffer Done with {@Args}", e);
+        
+        _screenshotDone = true;
     }
 }

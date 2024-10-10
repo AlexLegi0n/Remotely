@@ -2,7 +2,7 @@
   "profiles": {
     "Desktop.Linux": {
       "commandName": "Project",
-      "commandLineArgs": "-m Attended -h https://localhost:5001"
+      "commandLineArgs": "--mode Attended --host http://192.168.1.156:5000 --grpc http://localhost:50052"
     }
   }
 }
