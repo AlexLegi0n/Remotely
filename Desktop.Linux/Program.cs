@@ -46,10 +46,10 @@ public class Program
 
         services.AddLogging(builder =>
         {
-            if (EnvironmentHelper.IsDebug)
-            {
+            // if (EnvironmentHelper.IsDebug)
+            // {
                 builder.SetMinimumLevel(LogLevel.Debug);
-            }
+            // }
             builder.AddProvider(new FileLoggerProvider("Remotely_Desktop", version));
         });
 
