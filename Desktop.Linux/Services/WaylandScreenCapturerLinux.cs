@@ -29,9 +29,7 @@ internal sealed class WaylandScreenCapturerLinux : IScreenCapturer
 
     public WaylandScreenCapturerLinux(ILogger<WaylandScreenCapturerLinux> logger, IImageHelper imageHelper)
     {
-        logger.LogDebug("WaylandScreenCapturerLinux - Version 1.13.1");
-
-        logger.LogDebug("Creating WaylandScreenCapturerLinux");
+        logger.LogDebug("WaylandScreenCapturerLinux - Version 1.13.2");
 
         _logger = logger;
         _imageHelper = imageHelper;
@@ -74,6 +72,9 @@ internal sealed class WaylandScreenCapturerLinux : IScreenCapturer
 
         _wlDisplay.Dispose();
         _screenProtocols.Dispose();
+        _currentFrame?.Dispose();
+        _previousFrame?.Dispose();
+        _currentScreen?.Dispose();
 
         foreach (WaylandScreen output in _screens)
         {

@@ -12,7 +12,7 @@ internal class ScreenshotFailedEventArgs
     public string Message { get; init; } = null!;
 }
 
-internal sealed class WaylandScreenProtocols : IDisposable
+internal sealed class WaylandScreenProtocols : WaylandProtocols
 {
     private ZwlrScreencopyFrameV1? _frame;
     private List<WlOutput>? _wlOutputs;
@@ -34,20 +34,22 @@ internal sealed class WaylandScreenProtocols : IDisposable
     
     public string GetScreenCastingProtocol()=> WestonScreenshooter is not null ? WlInterface.WestonScreenshooter.Name : WlInterface.ZwlrScreencopyManagerV1.Name;
 
-    public void Dispose()
+    protected override void Dispose(bool disposing)
     {
-        _wlShm?.Dispose();
-        WestonScreenshooter?.Dispose();
-        _wlOutputs?.ForEach(x => x.Dispose());
-        ZwlrScreencopyManagerV1?.Dispose();
-        _zxdgOutputManagerV1?.Dispose();
+        if (disposing)
+        {
+            _wlShm?.Dispose();
+            WestonScreenshooter?.Dispose();
+            _wlOutputs?.ForEach(x => x.Dispose());
+            ZwlrScreencopyManagerV1?.Dispose();
+            _zxdgOutputManagerV1?.Dispose();
+        }
     }
 
-    public event EventHandler<WlRegistry.GlobalEventArgs>? BindCompleted;
     public event EventHandler<ScreenshotDoneEventArgs>? ScreenshotDone;
     public event EventHandler<ScreenshotFailedEventArgs>? ScreenshotFailed;
 
-    public bool Bind(WlRegistry.GlobalEventArgs args, WlRegistry registry)
+    public override bool Bind(WlRegistry.GlobalEventArgs args, WlRegistry registry)
     {
         if (args.Interface == WlInterface.WestonScreenshooter.Name)
         {
@@ -57,7 +59,7 @@ internal sealed class WaylandScreenProtocols : IDisposable
                 ScreenshotDone?.Invoke(this, new ScreenshotDoneEventArgs { ScreenshotDone = true });
             };
 
-            BindCompleted?.Invoke(this, args);
+            OnBindCompleted(args);
 
             return true;
         }
@@ -65,7 +67,7 @@ internal sealed class WaylandScreenProtocols : IDisposable
         if (args.Interface == WlInterface.ZxdgOutputManagerV1.Name)
         {
             _zxdgOutputManagerV1 = registry.Bind<ZxdgOutputManagerV1>(args.Name, args.Interface, args.Version);
-            BindCompleted?.Invoke(this, args);
+            OnBindCompleted(args);
 
             return true;
         }
@@ -73,7 +75,7 @@ internal sealed class WaylandScreenProtocols : IDisposable
         if (args.Interface == WlInterface.WlShm.Name)
         {
             _wlShm = registry.Bind<WlShm>(args.Name, args.Interface, args.Version);
-            BindCompleted?.Invoke(this, args);
+            OnBindCompleted(args);
 
             return true;
         }
@@ -85,7 +87,7 @@ internal sealed class WaylandScreenProtocols : IDisposable
             _wlOutputs ??= [];
             _wlOutputs.Add(wlOutput);
 
-            BindCompleted?.Invoke(this, args);
+            OnBindCompleted(args);
 
             return true;
         }
@@ -93,7 +95,7 @@ internal sealed class WaylandScreenProtocols : IDisposable
         if (args.Interface == WlInterface.ZwlrScreencopyManagerV1.Name)
         {
             ZwlrScreencopyManagerV1 = registry.Bind<ZwlrScreencopyManagerV1>(args.Name, args.Interface, args.Version);
-            BindCompleted?.Invoke(this, args);
+            OnBindCompleted(args);
 
             return true;
         }
