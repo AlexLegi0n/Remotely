@@ -29,7 +29,7 @@ internal sealed class WaylandScreenCapturerLinux : IScreenCapturer
 
     public WaylandScreenCapturerLinux(ILogger<WaylandScreenCapturerLinux> logger, IImageHelper imageHelper)
     {
-        logger.LogDebug("WaylandScreenCapturerLinux - Version 1.13.2");
+        logger.LogDebug("Using [{ScreenCaptureComponent}] - Version 1.13.2", nameof(WaylandScreenCapturerLinux));
 
         _logger = logger;
         _imageHelper = imageHelper;

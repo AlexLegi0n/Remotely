@@ -64,6 +64,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Desktop.Native", "Desktop.N
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sirona.RemoteControl.Synchronizer", "Sirona.RemoteControl.Synchronizer\Sirona.RemoteControl.Synchronizer.csproj", "{5D408BB8-4FC1-4CF3-B7E0-D98847405CE9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WaylandSharpGen", "WaylandSharpGen\WaylandSharpGen.csproj", "{6D1822C4-E9C4-487B-B804-11AF98E74A5B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -230,6 +232,18 @@ Global
 		{5D408BB8-4FC1-4CF3-B7E0-D98847405CE9}.Release|x64.Build.0 = Release|Any CPU
 		{5D408BB8-4FC1-4CF3-B7E0-D98847405CE9}.Release|x86.ActiveCfg = Release|Any CPU
 		{5D408BB8-4FC1-4CF3-B7E0-D98847405CE9}.Release|x86.Build.0 = Release|Any CPU
+		{6D1822C4-E9C4-487B-B804-11AF98E74A5B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6D1822C4-E9C4-487B-B804-11AF98E74A5B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6D1822C4-E9C4-487B-B804-11AF98E74A5B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{6D1822C4-E9C4-487B-B804-11AF98E74A5B}.Debug|x64.Build.0 = Debug|Any CPU
+		{6D1822C4-E9C4-487B-B804-11AF98E74A5B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{6D1822C4-E9C4-487B-B804-11AF98E74A5B}.Debug|x86.Build.0 = Debug|Any CPU
+		{6D1822C4-E9C4-487B-B804-11AF98E74A5B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6D1822C4-E9C4-487B-B804-11AF98E74A5B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6D1822C4-E9C4-487B-B804-11AF98E74A5B}.Release|x64.ActiveCfg = Release|Any CPU
+		{6D1822C4-E9C4-487B-B804-11AF98E74A5B}.Release|x64.Build.0 = Release|Any CPU
+		{6D1822C4-E9C4-487B-B804-11AF98E74A5B}.Release|x86.ActiveCfg = Release|Any CPU
+		{6D1822C4-E9C4-487B-B804-11AF98E74A5B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

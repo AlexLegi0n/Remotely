@@ -130,7 +130,8 @@ internal sealed class RemotelyAppLauncher(
         ProcessStartInfo psi = new()
         {
             FileName = fileName,
-            Arguments = args
+            Arguments = args,
+            RedirectStandardError = true
         };
 
         psi.Environment.Add("DISPLAY", xdisplay);

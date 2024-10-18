@@ -6,6 +6,7 @@ public abstract class WaylandProtocols : IDisposable
 {
     public event EventHandler<WlRegistry.GlobalEventArgs>? BindCompleted;
 
+    public uint Time => (uint)TimeSpan.FromMilliseconds(Environment.TickCount).TotalMilliseconds;
     public abstract bool Bind(WlRegistry.GlobalEventArgs args, WlRegistry registry);
 
     protected void OnBindCompleted(WlRegistry.GlobalEventArgs args)

@@ -1,18 +1,16 @@
-using Microsoft.Extensions.Logging;
 using WaylandSharp;
 
 namespace Remotely.Desktop.Linux.Services.Models;
 
-internal sealed class WaylandKeyboardProtocols(ILogger logger) : WaylandProtocols
+internal sealed class WaylandKeyboardProtocols : WaylandProtocols
 {
+    private TypeMode? _currentMode;
     private ZwpVirtualKeyboardV1? _keyboard;
     private ZwpVirtualKeyboardManagerV1? _keyboardManager;
     private WlKeyboard? _wlKeyboard;
     private WlSeat? _wlSeat;
 
     public event EventHandler<WlKeyboard.KeymapEventArgs>? KeymapChanged;
-
-    private TypeMode? _currentMode;
 
     public override bool Bind(WlRegistry.GlobalEventArgs args, WlRegistry registry)
     {
@@ -48,8 +46,6 @@ internal sealed class WaylandKeyboardProtocols(ILogger logger) : WaylandProtocol
         {
             if (_keyboard is not null)
             {
-                logger.LogDebug("Keyboard has already been created");
-
                 return;
             }
 
@@ -74,15 +70,14 @@ internal sealed class WaylandKeyboardProtocols(ILogger logger) : WaylandProtocol
     public uint SendKey(string key, bool pressed)
     {
         if (_keyboard is null)
+        {
             throw new ApplicationException("Keyboard is null");
+        }
 
         uint mappedKey = ConvertJavaScriptKeyToWaylandKeyCode(key);
-        uint totalMilliseconds = (uint)TimeSpan.FromMilliseconds(Environment.TickCount).TotalMilliseconds;
 
-        if (TryGetModifiers(key, out var modifiers))
+        if (TryGetModifiers(key, out TypeMode modifiers))
         {
-            logger.LogDebug("Modifiers: {Mods}", modifiers);
-
             switch (pressed)
             {
                 case true when _currentMode != TypeMode.Capslock:
@@ -94,7 +89,10 @@ internal sealed class WaylandKeyboardProtocols(ILogger logger) : WaylandProtocol
                 default:
                 {
                     if (_currentMode != TypeMode.Capslock)
+                    {
                         _currentMode = TypeMode.None;
+                    }
+
                     break;
                 }
             }
@@ -104,7 +102,7 @@ internal sealed class WaylandKeyboardProtocols(ILogger logger) : WaylandProtocol
             return mappedKey;
         }
 
-        _keyboard!.Key(totalMilliseconds, mappedKey, (uint)(pressed ? 1 : 0));
+        _keyboard!.Key(Time, mappedKey, (uint)(pressed ? 1 : 0));
 
         return mappedKey;
     }
@@ -112,9 +110,6 @@ internal sealed class WaylandKeyboardProtocols(ILogger logger) : WaylandProtocol
     private void CreateVirtualKeyboard(WlKeyboard.KeymapEventArgs keymapEventArgs)
     {
         _keyboard = _keyboardManager!.CreateVirtualKeyboard(_wlSeat!);
-        
-        logger.LogDebug("Keyboard has been created: {Id}", _keyboard.GetId());
-
         _keyboard.Keymap((uint)keymapEventArgs.Format, keymapEventArgs.Fd, keymapEventArgs.Size);
     }
 
@@ -124,8 +119,8 @@ internal sealed class WaylandKeyboardProtocols(ILogger logger) : WaylandProtocol
         {
             #region Navigation keys
 
-            "Home" => 102,   // KEY_HOME
-            "End" => 107,    // KEY_END
+            "Home" => 102, // KEY_HOME
+            "End" => 107, // KEY_END
 
             #endregion
 
@@ -137,7 +132,7 @@ internal sealed class WaylandKeyboardProtocols(ILogger logger) : WaylandProtocol
             "ArrowRight" => 106, // KEY_RIGHT
 
             #endregion
-          
+
             #region Special keys
 
             "Enter" => 28, // KEY_ENTER
@@ -230,7 +225,7 @@ internal sealed class WaylandKeyboardProtocols(ILogger logger) : WaylandProtocol
             "U" => 22, "V" => 47, "W" => 17, "X" => 45, "Y" => 21,
             "Z" => 44,
 
-                #endregion
+            #endregion
 
             // Default case for unmapped keys
             _ => 0 // Unknown key
