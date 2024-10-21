@@ -26,6 +26,8 @@ public interface IAppState
     string[] RelaunchViewers { get; }
     string RequesterName { get; }
     string SessionId { get; }
+    string GrpcServer { get; }
+
     ConcurrentDictionary<string, IViewer> Viewers { get; }
 
     void Configure(
@@ -38,7 +40,8 @@ public interface IAppState
         string pipeName,
         bool relaunch,
         string viewers,
-        bool elevate);
+        bool elevate,
+        string grpcServer);
 
     void InvokeScreenCastRequested(ScreenCastRequest viewerIdAndRequesterName);
     void InvokeViewerAdded(IViewer viewer);
@@ -101,6 +104,8 @@ public class AppState : IAppState
     public string[] RelaunchViewers { get; private set; } = Array.Empty<string>();
     public string RequesterName { get; private set; } = string.Empty;
     public string SessionId { get; private set; } = string.Empty;
+    public string GrpcServer { get; private set; } = string.Empty;
+
     public ConcurrentDictionary<string, IViewer> Viewers { get; } = new();
     public void Configure(
         string host,
@@ -112,7 +117,8 @@ public class AppState : IAppState
         string pipeName,
         bool relaunch,
         string viewers,
-        bool elevate)
+        bool elevate,
+        string grpcServer)
     {
         if (_isConfigured)
         {
@@ -130,6 +136,7 @@ public class AppState : IAppState
         IsRelaunch = relaunch;
         RelaunchViewers = viewers.Split(",");
         IsElevate = elevate;
+        GrpcServer = grpcServer;
     }
 
     public void InvokeScreenCastRequested(ScreenCastRequest viewerIdAndRequesterName)

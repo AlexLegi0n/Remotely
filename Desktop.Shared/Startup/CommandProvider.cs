@@ -40,7 +40,10 @@ public static class CommandProvider
             "The remote control mode to use.  Either Attended, Unattended, or Chat.");
         rootCommand.AddOption(modeOption);
 
-
+        var grpcServerOption = new Option<string>(["-g", "--grpc"], "Remotely Synchronizer grpc server");
+        rootCommand.AddOption(grpcServerOption);
+        
+        
         var pipeNameOption = new Option<string>(
             new[] { "-p", "--pipe-name" },
             "When AppMode is Chat, this is the pipe name used by the named pipes server.");

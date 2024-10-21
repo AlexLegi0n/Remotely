@@ -32,6 +32,10 @@
     <Copyright>Copyright © 2023 Immense Networks</Copyright>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+  <PropertyGroup>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>./.generated</CompilerGeneratedFilesOutputPath>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Update="**\*.xaml.cs">
       <DependentUpon>%(Filename)</DependentUpon>
@@ -57,5 +61,16 @@
   <ItemGroup>
     <ProjectReference Include="..\Desktop.Shared\Desktop.Shared.csproj" />
     <ProjectReference Include="..\Desktop.UI\Desktop.UI.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.11.0" />
+<!--    <PackageReference Include="WaylandSharp" Version="0.2.1" />-->
+  </ItemGroup>
+
+  <ItemGroup>
+    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="WaylandProtocol" />
+    <AdditionalFiles Include="Assets/wayland.xml" WaylandProtocol="client" />
+    <ProjectReference Include="..\WaylandSharpGen\WaylandSharpGen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <!-- Add additional protocol files with more AdditionalFiles tags -->
   </ItemGroup>
 </Project>

@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Bitbound.SimpleMessenger;
 using Desktop.Shared.Services;
 using Remotely.Desktop.Shared.Abstractions;
+using Sirona.RemoteControl.Synchronizer;
 
 namespace Remotely.Desktop.Shared.Startup;
 
@@ -32,5 +33,11 @@ public static class IServiceCollectionExtensions
         services.AddSingleton<IViewerFactory, ViewerFactory>();
         services.AddTransient<IScreenCaster, ScreenCaster>();
         services.AddTransient<IHubConnectionBuilder>(s => new HubConnectionBuilder());
+        
+        services.AddGrpcClient<RemoteControlService.RemoteControlServiceClient>((provider, options) =>
+        {
+            var appState = provider.GetRequiredService<IAppState>();
+            options.Address = new Uri(appState.GrpcServer);
+        });
     }
 }

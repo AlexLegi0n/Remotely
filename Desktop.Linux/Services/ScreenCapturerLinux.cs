@@ -83,7 +83,7 @@ public class ScreenCapturerLinux : IScreenCapturer
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error while getting next frame.");
+                _logger.LogError(ex, "Error while getting next frame");
                 Init();
                 return Result.Fail<SKBitmap>(ex);
             }

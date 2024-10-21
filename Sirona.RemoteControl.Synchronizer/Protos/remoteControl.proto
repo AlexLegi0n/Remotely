@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+option csharp_namespace = "Sirona.RemoteControl.Synchronizer";
+
+import "google/protobuf/empty.proto";
+package remoteControl;
+
+
+service RemoteControlService {
+  rpc BroadcastSessionCode(SessionAuthentication) returns(google.protobuf.Empty);
+  rpc BroadcastSessionError(SessionControlError) returns(google.protobuf.Empty);
+  rpc BroadcastSessionControlRequested(SessionControlRequested) returns(google.protobuf.Empty);
+  rpc SubscribeToPermissionProvided(google.protobuf.Empty) returns(stream SessionPermissions);
+}
+
+message SessionPermissions {
+  bool allowConnection = 1;
+}
+
+message SessionAuthentication {
+  string code = 1;
+}
+
+message SessionControlError {
+  string message = 1;
+  string error = 2;
+}
+
+message SessionControlRequested {
+  string userName = 1;
+}

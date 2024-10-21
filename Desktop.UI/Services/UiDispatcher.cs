@@ -7,6 +7,7 @@ using Remotely.Shared.Helpers;
 using Microsoft.Extensions.Logging;
 using Remotely.Shared.Primitives;
 using System.Threading;
+using Avalonia.Headless;
 
 namespace Remotely.Desktop.UI.Services;
 
@@ -195,12 +196,14 @@ internal class UiDispatcher : IUiDispatcher
         try
         {
             var args = Environment.GetCommandLineArgs();
-            _appBuilder = BuildAvaloniaApp();
-            _appBuilder.StartWithClassicDesktopLifetime(args);
+            _appBuilder = BuildAvaloniaApp()
+                .UseHeadless(new AvaloniaHeadlessPlatformOptions());
+            _appBuilder.StartWithClassicDesktopLifetime(args, ShutdownMode.OnExplicitShutdown);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error while starting foreground app.");
+            _logger.LogError(ex, "Error while starting foreground app");
+            
             throw;
         }
     }

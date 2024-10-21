@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+option csharp_namespace = "Sirona.RemoteControl.Synchronizer";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/wrappers.proto";
+
+
+package synchronizer;
+
+
+service SyncService {
+  rpc StartRemoteSession(StartRemoteSessionRequest) returns(OperationResult);
+  rpc StopRemoteSession(StopRemoteSessionRequest) returns(OperationResult);
+  rpc SetSessionPermissions(SetSessionPermissionsRequest) returns(OperationResult);
+
+  rpc SubscribeSynchronizerSateUpdate(google.protobuf.Empty) returns(stream SynchronizerState);
+}
+
+message StopRemoteSessionRequest {
+
+}
+
+message StartRemoteSessionRequest {
+
+}
+
+message SetSessionPermissionsRequest {
+  bool allow_connection = 1;
+}
+
+message OperationResult  {
+  StatusCode status_code = 1;
+  string message = 2;
+}
+
+message SynchronizerState {
+  State state = 1;
+
+  google.protobuf.StringValue session_id = 2;
+  google.protobuf.StringValue user_name = 3;
+  google.protobuf.StringValue message = 4;
+}
+
+enum StatusCode {
+  no_error = 0;
+  exec_error = 1;
+  invalid_state = 2;
+}
+
+enum State {
+  not_running = 0;
+  running = 1;
+  authentication_requested = 2;
+  permission_requested = 3;
+  establish_connection = 4;
+  session_established = 5;
+  session_aborted = 6;
+  disconnected = 7;
+  connection_error = 10;
+}

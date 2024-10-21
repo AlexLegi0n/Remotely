@@ -75,7 +75,10 @@ internal class ScreenCaster : IScreenCaster
             {
                 registration.Dispose();
             }
-            catch { }
+            catch
+            {
+                // ignored
+            }
         }
         _metricsCts.Cancel();
         _metricsCts.Dispose();
@@ -95,8 +98,8 @@ internal class ScreenCaster : IScreenCaster
             var screenBounds = viewer.Capturer.CurrentScreenBounds;
 
             _logger.LogInformation(
-                "Starting screen cast.  Requester: {viewerName}. " +
-                "Viewer ID: {viewerViewerConnectionID}.  App Mode: {mode}",
+                "Starting screen cast.  Requester: {ViewerName}. " +
+                "Viewer ID: {ViewerViewerConnectionID}.  App Mode: {Mode}",
                 viewer.Name,
                 viewer.ViewerConnectionId,
                 _appState.Mode);
@@ -133,22 +136,22 @@ internal class ScreenCaster : IScreenCaster
             await viewer.SendDesktopStream(GetDesktopStream(viewer, sessionEndSignal), screenCastRequest.StreamId);
             if (!await sessionEndSignal.WaitAsync(TimeSpan.FromHours(8)))
             {
-                _logger.LogWarning("Timed out while waiting for session to end.");
+                _logger.LogWarning("Timed out while waiting for session to end");
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error while starting screen casting.");
+            _logger.LogError(ex, "Error while starting screen casting");
         }
         finally
         {
             _logger.LogInformation(
                 "Ended desktop stream.  " +
-                "Requester: {viewerName}. " +
-                "Viewer ID: {viewerConnectionID}. " +
-                "Viewer Responsive: {isResponsive}.  " +
-                "Viewer Disconnected Requested: {viewerDisconnectRequested}. " +
-                "Windows Session Ending: {windowsSessionEnding}",
+                "Requester: {ViewerName}. " +
+                "Viewer ID: {ViewerConnectionID}. " +
+                "Viewer Responsive: {IsResponsive}.  " +
+                "Viewer Disconnected Requested: {ViewerDisconnectRequested}. " +
+                "Windows Session Ending: {WindowsSessionEnding}",
                 viewer.Name,
                 viewer.ViewerConnectionId,
                 viewer.IsResponsive,
@@ -161,7 +164,7 @@ internal class ScreenCaster : IScreenCaster
             // Close if no one is viewing.
             if (_appState.Viewers.IsEmpty && _appState.Mode == AppMode.Unattended)
             {
-                _logger.LogInformation("No more viewers.  Calling shutdown service.");
+                _logger.LogInformation("No more viewers. Calling shutdown service");
                 await _shutdownService.Shutdown();
             }
         }
@@ -181,8 +184,7 @@ internal class ScreenCaster : IScreenCaster
 
                 if (!await viewer.WaitForViewer())
                 {
-                    _logger.LogWarning(
-                        "Viewer is behind on frames and did not catch up in time.");
+                    _logger.LogWarning("Viewer is behind on frames and did not catch up in time");
                 }
 
                 var result = viewer.Capturer.GetNextFrame();
