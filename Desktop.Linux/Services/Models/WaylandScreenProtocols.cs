@@ -14,6 +14,8 @@ internal class ScreenshotFailedEventArgs
 
 internal sealed class WaylandScreenProtocols : WaylandProtocols
 {
+    private readonly object _lock = new();
+
     private ZwlrScreencopyFrameV1? _frame;
     private List<WlOutput>? _wlOutputs;
     private WlShm? _wlShm;
@@ -31,8 +33,10 @@ internal sealed class WaylandScreenProtocols : WaylandProtocols
     public ZwlrScreencopyManagerV1? ZwlrScreencopyManagerV1 { get; private set; }
     public IReadOnlyCollection<WlOutput> WlOutputs => _wlOutputs ?? [];
     public bool HasScreenCastingProtocol => WestonScreenshooter is not null || ZwlrScreencopyManagerV1 is not null;
-    
-    public string GetScreenCastingProtocol()=> WestonScreenshooter is not null ? WlInterface.WestonScreenshooter.Name : WlInterface.ZwlrScreencopyManagerV1.Name;
+
+    public string GetScreenCastingProtocol() => WestonScreenshooter is not null
+        ? WlInterface.WestonScreenshooter.Name
+        : WlInterface.ZwlrScreencopyManagerV1.Name;
 
     protected override void Dispose(bool disposing)
     {
@@ -113,34 +117,44 @@ internal sealed class WaylandScreenProtocols : WaylandProtocols
             {
                 ScreenshotFailed?.Invoke(this, new ScreenshotFailedEventArgs()
                 {
-                    Message = $"Failed to create buffer: {screen.Width}x{screen.Height}. Stride: {stride}. Format: {WlShmFormat.Xrgb8888}"
+                    Message =
+                        $"Failed to create buffer: {screen.Width}x{screen.Height}. Stride: {stride}. Format: {WlShmFormat.Xrgb8888}"
                 });
             }
 
 
             WestonScreenshooter!.TakeShot(screen.Output, screen.Buffer!);
-            
+
             return;
         }
 
-        _frame?.Destroy();
-        _frame = ZwlrScreencopyManagerV1!.CaptureOutput(1, screen.Output);
-
-        _frame.Ready += (_, _) => ScreenshotDone?.Invoke(this, new ScreenshotDoneEventArgs { ScreenshotDone = true });
-        _frame.Buffer += (_, args) =>
+        lock (_lock)
         {
-            if (!screen.InitializeBuffer(WlShm, (int)args.Width,
-                    (int)args.Height,
-                    (int)args.Stride,
-                    args.Format))
+            _frame?.Destroy();
+            _frame = ZwlrScreencopyManagerV1!.CaptureOutput(1, screen.Output);
+            _frame.Ready += (_, _) =>
+                ScreenshotDone?.Invoke(this, new ScreenshotDoneEventArgs { ScreenshotDone = true });
+            _frame.Buffer += (_, args) =>
             {
-                ScreenshotFailed?.Invoke(this, new ScreenshotFailedEventArgs()
+                lock (_lock)
                 {
-                    Message = $"Failed to create buffer: {args.Width}x{args.Height}. Stride: {args.Stride}. Format: {args.Format}"
-                });
-            }
+                    bool bufferInitialized = screen.Buffer != null;
 
-            _frame.Copy(screen.Buffer!);
-        };
+                    if (!bufferInitialized && !screen.InitializeBuffer(WlShm, (int)args.Width,
+                            (int)args.Height,
+                            (int)args.Stride,
+                            args.Format))
+                    {
+                        ScreenshotFailed?.Invoke(this, new ScreenshotFailedEventArgs()
+                        {
+                            Message =
+                                $"Failed to create buffer: {args.Width}x{args.Height}. Stride: {args.Stride}. Format: {args.Format}"
+                        });
+                    }
+
+                    _frame.Copy(screen.Buffer!);
+                }
+            };
+        }
     }
 }

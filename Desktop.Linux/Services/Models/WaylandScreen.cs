@@ -26,8 +26,8 @@ internal sealed class WaylandScreen(WlOutput output) : IDisposable
 
         Marshal.FreeHGlobal(Data);
     }
-    
-    public bool InitializeBuffer(WlShm wlShm, int width, int height,  int stride, WlShmFormat format)
+
+    public bool InitializeBuffer(WlShm wlShm, int width, int height, int stride, WlShmFormat format)
     {
         // Calculate the total size of the buffer
         int size = stride * height;
@@ -72,8 +72,8 @@ internal sealed class WaylandScreen(WlOutput output) : IDisposable
 
         return true;
     }
-    
-    public bool InitializeBuffer(WlShm wlShm,  int stride, WlShmFormat format)
+
+    public bool InitializeBuffer(WlShm wlShm, int stride, WlShmFormat format)
     {
         // Calculate the total size of the buffer
         int size = stride * Height;
@@ -114,8 +114,8 @@ internal sealed class WaylandScreen(WlOutput output) : IDisposable
 
         pool.Destroy();
 
-       Buffer = buffer;
+        Buffer = buffer;
 
-       return true;
+        return true;
     }
 }

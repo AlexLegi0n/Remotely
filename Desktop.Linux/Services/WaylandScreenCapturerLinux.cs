@@ -2,7 +2,7 @@ using System.Drawing;
 using Microsoft.Extensions.Logging;
 using Remotely.Desktop.Linux.Services.Models;
 using Remotely.Desktop.Shared.Abstractions;
-using Remotely.Desktop.Shared.Services;
+using Remotely.Desktop.Shared.Extensions;
 using Remotely.Shared.Primitives;
 using SkiaSharp;
 using WaylandSharp;
@@ -11,7 +11,6 @@ namespace Remotely.Desktop.Linux.Services;
 
 internal sealed class WaylandScreenCapturerLinux : IScreenCapturer
 {
-    private readonly IImageHelper _imageHelper;
     private readonly ILogger<WaylandScreenCapturerLinux> _logger;
 
     private readonly object _screenBoundsLock = new();
@@ -27,12 +26,11 @@ internal sealed class WaylandScreenCapturerLinux : IScreenCapturer
     private bool _screenshotDone;
     private bool _screenshotFailed;
 
-    public WaylandScreenCapturerLinux(ILogger<WaylandScreenCapturerLinux> logger, IImageHelper imageHelper)
+    public WaylandScreenCapturerLinux(ILogger<WaylandScreenCapturerLinux> logger)
     {
         logger.LogDebug("Using [{ScreenCaptureComponent}] - Version 1.13.2", nameof(WaylandScreenCapturerLinux));
 
         _logger = logger;
-        _imageHelper = imageHelper;
         _screenProtocols = new WaylandScreenProtocols();
 
         _screenProtocols.BindCompleted += (_, args) =>
@@ -91,9 +89,14 @@ internal sealed class WaylandScreenCapturerLinux : IScreenCapturer
     {
         lock (_screenBoundsLock)
         {
-            return _currentFrame is null
-                ? SKRect.Empty
-                : _imageHelper.GetDiffArea(_currentFrame, _previousFrame, CaptureFullscreen);
+            if (_currentFrame is not null)
+            {
+                return _currentFrame.ToRectangle();
+            }
+
+            _logger.LogInformation("Getting FrameDiff: Current frame is empty. Returning empty rectangle...");
+
+            return SKRect.Empty;
         }
     }
 
@@ -101,11 +104,17 @@ internal sealed class WaylandScreenCapturerLinux : IScreenCapturer
     {
         lock (_screenBoundsLock)
         {
-            return _currentFrame is null
-                ? Result.Fail<SKBitmap>("Current frame is null.")
-                : _imageHelper.GetImageDiff(_currentFrame, _previousFrame);
+            if (_currentFrame is not null)
+            {
+                return Result.Ok(_currentFrame.Copy());
+            }
+
+            _logger.LogInformation("Getting image diff: Current frame is empty. Returning empty rectangle...");
+
+            return Result.Fail<SKBitmap>("Current frame is null.");
         }
     }
+
 
     public Result<SKBitmap> GetNextFrame()
     {
@@ -350,7 +359,9 @@ internal sealed class WaylandScreenCapturerLinux : IScreenCapturer
                 done = _screenshotDone;
 
                 if (_screenshotFailed)
+                {
                     return _currentFrame!;
+                }
             }
         }
 
